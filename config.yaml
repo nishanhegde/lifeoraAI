@@ -1,0 +1,44 @@
+# LifeoraAI RAG Configuration
+# Switch providers here without changing any code
+
+# ── LLM Provider ─────────────────────────────────────────────────────────────
+# Options: "ollama" | "claude"
+llm_provider: "ollama"
+
+# ── Ollama Settings (Path A - local, free) ───────────────────────────────────
+ollama:
+  base_url: "http://localhost:11434"
+  # Options: gemma2:9b | llama3.2:3b | llama3.1:8b | mistral:7b | phi3.5
+  model: "llama3.2:3b"
+  temperature: 0.2
+  max_tokens: 1024
+
+# ── Claude API Settings (Path B - cloud) ─────────────────────────────────────
+claude:
+  model: "claude-sonnet-4-6"
+  temperature: 0.2
+  max_tokens: 1024
+  # Set via env: ANTHROPIC_API_KEY
+
+# ── Embedding Model ──────────────────────────────────────────────────────────
+# Stays the same regardless of LLM provider
+embedding:
+  model: "all-MiniLM-L6-v2"   # fast, good quality, 384 dims
+  chunk_size: 300              # tokens per chunk
+  chunk_overlap: 50            # overlap between chunks
+
+# ── Vector Store ─────────────────────────────────────────────────────────────
+vector_store:
+  type: "chromadb"
+  persist_dir: "embeddings/chroma_db"
+  collection_name: "lifeoraai_knowledge"
+
+# ── Retrieval Settings ───────────────────────────────────────────────────────
+retrieval:
+  top_k: 5                     # number of chunks to retrieve per query
+  similarity_threshold: 0.3    # minimum similarity score to include a chunk
+
+# ── Data ─────────────────────────────────────────────────────────────────────
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"

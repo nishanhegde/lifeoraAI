@@ -1,0 +1,23 @@
+# Core RAG stack
+sentence-transformers>=2.7.0
+chromadb>=0.5.0
+
+# LLM providers
+ollama>=0.2.0
+anthropic>=0.28.0
+
+# Retry / resilience
+tenacity>=8.2.0
+
+# Config & utilities
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Dev / notebook
+jupyter>=1.0.0
+ipykernel>=6.0.0
+matplotlib>=3.8.0
+scikit-learn>=1.4.0
+
+# Testing
+pytest>=8.0.0
