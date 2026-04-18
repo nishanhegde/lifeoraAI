@@ -38,7 +38,7 @@ class RAGPipeline:
     4. Generate grounded answer via the configured LLM provider
     """
 
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = "config.yaml", skip_provider_check: bool = False):
         config_path = Path(config_path)
         if not config_path.exists():
             raise FileNotFoundError(f"config.yaml not found at: {config_path.resolve()}")
@@ -74,8 +74,7 @@ class RAGPipeline:
             threshold=ret_cfg.get("similarity_threshold", 0.3),
         )
 
-        # is_available() is called inside get_provider() — raises at startup if not ready
-        self.provider: LLMProvider = get_provider(self.config)
+        self.provider: LLMProvider = get_provider(self.config, check_available=not skip_provider_check)
 
         chunk_count = self.vector_store.count()
         logger.info(

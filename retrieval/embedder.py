@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class TextChunker:
             chunks.extend(self._word_chunk(section, metadata, start_index=len(chunks)))
         return chunks
 
-    def chunk_file(self, file_path: str | Path) -> List[dict]:
+    def chunk_file(self, file_path: Union[str, Path]) -> List[dict]:
         """Read a file and chunk it. Uses the filename stem as topic metadata."""
         path = Path(file_path)
         text = path.read_text(encoding="utf-8")

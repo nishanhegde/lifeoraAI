@@ -8,7 +8,7 @@ from .claude_provider import ClaudeProvider
 logger = logging.getLogger(__name__)
 
 
-def get_provider(config: dict) -> LLMProvider:
+def get_provider(config: dict, check_available: bool = True) -> LLMProvider:
     """
     Build an LLM provider from config.yaml values.
     Calls is_available() immediately — raises ProviderUnavailableError at startup
@@ -46,7 +46,9 @@ def get_provider(config: dict) -> LLMProvider:
             f"Unknown llm_provider: '{provider_name}'. Valid options: ollama, claude"
         )
 
-    # Fail fast: check availability at startup, not on first request
-    provider.is_available()
-    logger.info("LLM provider ready: %s", provider.name)
+    if check_available:
+        provider.is_available()
+        logger.info("LLM provider ready: %s", provider.name)
+    else:
+        logger.warning("Skipping availability check for %s", provider.name)
     return provider

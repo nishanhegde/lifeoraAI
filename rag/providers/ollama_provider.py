@@ -74,13 +74,21 @@ class OllamaProvider(LLMProvider):
                 "num_predict": self.config.max_tokens,
             },
         )
-        return response["message"]["content"]
+        # SDK may return objects or dicts depending on version
+        if isinstance(response, dict):
+            return response["message"]["content"]
+        return response.message.content
 
     def is_available(self) -> bool:
         try:
             client = self._get_client()
             models = client.list()
-            available_names = [m["name"] for m in models.get("models", [])]
+            # SDK may return objects or dicts depending on version
+            model_list = models.get("models", []) if isinstance(models, dict) else getattr(models, "models", [])
+            available_names = [
+                m["name"] if isinstance(m, dict) else getattr(m, "model", getattr(m, "name", ""))
+                for m in model_list
+            ]
             found = any(self.model in name for name in available_names)
             if not found:
                 raise ProviderUnavailableError(

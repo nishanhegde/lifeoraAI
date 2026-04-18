@@ -3,6 +3,7 @@ Input validation for user queries.
 All validation raises ValidationError so callers can catch it at the API boundary.
 """
 import re
+from typing import Optional
 from .exceptions import ValidationError
 
 # Hard limits
@@ -54,7 +55,7 @@ def validate_query(question: str) -> str:
     return question
 
 
-def validate_topic_filter(topic: str | None) -> str | None:
+def validate_topic_filter(topic: Optional[str]) -> Optional[str]:
     """Raise ValidationError if topic is not a recognised filter value."""
     if topic not in VALID_TOPIC_FILTERS:
         raise ValidationError(
