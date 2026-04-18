@@ -43,6 +43,119 @@ Grounded answer returned via API + UI
 
 ---
 
+## LLM vs RAG vs SLM — Flow Comparison
+
+### Flow 1: LLM alone (e.g. ChatGPT, Claude without RAG)
+
+```
+User: "How much protein do I need?"
+        │
+        ▼
+  ┌─────────────┐
+  │  LLM Brain  │  ← knowledge frozen at training cutoff
+  │ (billions   │    answers from memory only
+  │  of params) │    may hallucinate, no citations
+  └─────────────┘
+        │
+        ▼
+"You need ~0.8g per kg of body weight"
+(correct-ish, but no source, no personalisation)
+```
+
+---
+
+### Flow 2: RAG alone — what LifeoraAI does today
+
+```
+User: "How much protein do I need?"
+        │
+        ▼
+  [ Embed question → 384-dim vector ]
+        │
+        ▼
+  [ ChromaDB: find top-5 closest chunks ]
+        │             ↑
+        │        nutrition.md, exercise.md …
+        │        (your curated knowledge base)
+        ▼
+  [ Build prompt: Context + Question ]
+        │
+        ▼
+  ┌─────────────┐
+  │  LLM Brain  │  ← generic model (Ollama / Claude)
+  │             │    answers ONLY from retrieved context
+  └─────────────┘    grounded, citable, no hallucination
+        │
+        ▼
+"Based on the Lifeora knowledge base: 1.6–2.2g/kg
+ for active adults. Source: nutrition.md §Protein"
+```
+
+---
+
+### Flow 3: SLM alone (fine-tuned small model, no RAG)
+
+```
+User: "How much protein do I need?"
+        │
+        ▼
+  ┌─────────────┐
+  │ Lifeora SLM │  ← small model (1–7B params)
+  │  fine-tuned │    trained on Lifeora data
+  │  on our data│    knows our tone + guidelines
+  └─────────────┘
+        │
+        ▼
+"As Lifeora recommends: 1.6g/kg for your goals"
+(correct tone, but knowledge is FROZEN at train time
+ — can't add new research without retraining)
+```
+
+---
+
+### Flow 4: SLM + RAG together — future Lifeora target
+
+```
+User: "How much protein do I need?"
+        │
+        ▼
+  [ Embed question → ChromaDB search ]
+        │             ↑
+        │        latest knowledge base
+        │        (update anytime, no retraining)
+        ▼
+  [ Retrieved context chunks ]
+        │
+        ▼
+  ┌─────────────┐
+  │ Lifeora SLM │  ← knows Lifeora tone, safety rules,
+  │  fine-tuned │    domain vocabulary BAKED IN
+  └─────────────┘    uses retrieved chunks as facts
+        │
+        ▼
+"Based on your profile and Lifeora guidelines:
+ 1.8g/kg given your training frequency.
+ Source: nutrition.md — updated March 2026"
+
+SLM  = the EXPERT (tone, safety, domain understanding)
+RAG  = the LIBRARY (live, updateable, cited facts)
+```
+
+---
+
+### Quick Comparison
+
+| Approach | Live data | Cites source | Lifeora tone | Cost |
+|----------|-----------|--------------|--------------|------|
+| LLM alone | ✗ | ✗ | ✗ | High |
+| RAG alone | ✓ | ✓ | ~ | Med |
+| SLM alone | ✗ | ✗ | ✓ | Low |
+| **SLM + RAG** | **✓** | **✓** | **✓** | **Low** |
+
+> LifeoraAI is currently **Flow 2** (RAG + generic LLM). The RAG layer is already built — Path C swaps in the Lifeora SLM without any other code changes.
+
+---
+
 ## Roadmap
 
 | Path | LLM | Status |
