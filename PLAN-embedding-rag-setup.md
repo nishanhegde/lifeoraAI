@@ -204,28 +204,71 @@
 
 ---
 
+## Phase 3c: Real Knowledge Corpus Ingest — DONE ✅
+
+**What:** Replace toy markdown seed data with 1,571 real health knowledge chunks from official sources.
+
+- [x] `health_intel_export/processed/chunks_export.jsonl` moved to `data/processed/chunks_export.jsonl`
+- [x] `health_intel_export/` folder removed — cleaned up
+- [x] `VectorStore.ingest_jsonl()` — reads JSONL, uses source `chunk_id` UUID as ChromaDB ID (no hash collision)
+- [x] `VectorStore._add_chunks_with_ids()` — insert path for caller-supplied IDs with dedup
+- [x] `RAGPipeline.ingest_jsonl()` — pipeline-level method
+- [x] `main.py` — `--jsonl FILE` flag added to ingest command
+- [x] `POST /ingest` API route — defaults to `data/processed/chunks_export.jsonl`
+- [x] `IngestRequest` model updated — `jsonl_path` field replaces `data_dir`
+- [x] UI "Ingest Documents" button — wired to `/ingest`, works without code changes
+- [x] UI suggestion chips — updated to 5 questions matched to actual corpus content
+- [x] Duplicate chunk handling — deduplication by `chunk_id` before ChromaDB insert
+
+**Corpus breakdown (1,571 chunks):**
+
+| Domain | Chunks | Sources |
+|--------|--------|---------|
+| `evidence_based` | 601 | MedlinePlus, General Web Crawler |
+| `lifestyle_behavior` | 518 | General Web Crawler |
+| `nutrition_science` | 309 | General Web Crawler |
+| `physical_activity` | 84 | CDC Physical Activity |
+| `health` | 45 | MedlinePlus Health Topics |
+| `exercise` | 9 | General Web Crawler |
+| `nutrition` | 3 | NHS Healthy Living |
+| `lifestyle` | 2 | NHS Healthy Living |
+
+**Coverage:** Primarily US (`1563`) + UK (`8`) · Trust: gold (`59`) + silver (`1512`)
+
+**Known gaps:** India (ICMR-NIN, Ayurveda, AYUSH), EU (EFSA), Yoga — addressed in Phase 5.
+
+---
+
 ## Phase 4: Smarter Retrieval — NEXT
 
 **What:** Make search smarter — not just meaning, but also filters and ranking.
 
-- [ ] Metadata filters: topic (nutrition / exercise / lifestyle), safety_category, audience level
-- [ ] Hybrid search: semantic similarity + keyword matching (BM25)
-- [ ] Re-ranking: score retrieved chunks by relevance before sending to LLM
-- [ ] Handle user context (dietary restrictions, fitness level) in retrieval
+The metadata (`domain`, `region`, `trust_level`, `safety_category`, `audience`) is already stored in ChromaDB from Phase 3c. This phase wires it into retrieval.
+
+- [ ] Metadata filters in retrieval — filter by `region`, `trust_level`, `domain`, `audience` per query
+- [ ] Topic filter dropdown in UI already wired — complete the filter logic in `retrieval/search.py`
+- [ ] Re-ranking — score top-K chunks by relevance before sending to LLM
+- [ ] Hybrid search — semantic similarity + keyword matching (BM25)
+- [ ] User context in retrieval — pass dietary restrictions / health conditions as filters
 
 ---
 
-## Phase 5: Domain Knowledge Graph — PLANNED
+## Phase 5: Expand Knowledge Coverage — PLANNED
 
-**What:** Model connections between entities for richer, context-aware retrieval.
+**What:** Add missing regional and framework knowledge to cover the full platform scope.
 
-- [ ] Map key relationships:
-  - food → nutrients
-  - exercise → muscle groups
-  - goal → recommended habits
-  - condition → cautions / exclusions
-- [ ] Store as structured data (JSON or lightweight graph DB)
-- [ ] Enrich retrieval: "building muscle" query also pulls protein-rich food data automatically
+Current corpus is US-heavy and evidence-based only. Platform is designed for India, UK, EU, US across clinical, nutrition, Ayurveda, Yoga, and lifestyle frameworks.
+
+**Data to add:**
+- [ ] India — ICMR-NIN dietary guidelines, Ministry of AYUSH, Ayurveda reference content
+- [ ] EU — EFSA nutrient reference values (`seeds/efsa_nutrient_refs.json` available)
+- [ ] India nutrition — ICMR-NIN guidance (`seeds/icmr_nin_guidance.json` available)
+- [ ] Activities & Yoga — structured activity data (`seeds/activities_seed.json` available)
+- [ ] Rules & safety — recommendation and exclusion rules (`seeds/rules_seed.json` available)
+- [ ] UK — expand NHS content beyond 8 current chunks
+- [ ] US — USDA FoodData Central (food/nutrition), NIH ODS (supplements)
+
+**Note:** Seed JSON files from the health intel pipeline are ready — need a JSON→JSONL conversion step and ingest.
 
 ---
 
@@ -237,6 +280,7 @@
 - [ ] Evaluate: relevance of retrieved chunks, quality of generated answers
 - [ ] Identify failure modes: wrong chunks retrieved, hallucinations, safety gaps
 - [ ] Iterate on chunk size, embedding model, prompt template, retrieval strategy
+- [ ] Benchmark Phase 4 filter improvements against baseline
 
 ---
 

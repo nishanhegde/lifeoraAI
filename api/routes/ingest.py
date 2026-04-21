@@ -6,19 +6,22 @@ from api.models import IngestRequest, IngestResponse
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+_DEFAULT_JSONL = "data/processed/chunks_export.jsonl"
+
 
 @router.post("/ingest", response_model=IngestResponse)
 def ingest(request: IngestRequest = None):
     """
-    Chunk, embed, and store all documents from the knowledge base directory.
-    Safe to call repeatedly — only new or changed content is added.
+    Embed and store health knowledge chunks from the JSONL corpus.
+    Safe to call repeatedly — only new chunks are added (deduplication by content hash).
 
-    - **data_dir**: optional override for the source directory (defaults to `config.yaml: data.raw_dir`)
+    - **jsonl_path**: optional override (defaults to `data/processed/chunks_export.jsonl`)
     """
     pipeline = get_pipeline()
-    logger.info("POST /ingest | data_dir=%s", request.data_dir if request else "default")
+    jsonl_path = (request.jsonl_path if request and request.jsonl_path else None) or _DEFAULT_JSONL
+    logger.info("POST /ingest | jsonl_path=%s", jsonl_path)
 
-    added = pipeline.ingest(data_dir=request.data_dir if request else None)
+    added = pipeline.ingest_jsonl(jsonl_path)
     total = pipeline.vector_store.count()
 
     return IngestResponse(

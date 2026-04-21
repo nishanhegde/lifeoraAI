@@ -94,6 +94,13 @@ class RAGPipeline:
         logger.info("Ingestion complete. New chunks: %d | Total: %d", total, self.vector_store.count())
         return total
 
+    def ingest_jsonl(self, jsonl_path: str) -> int:
+        """Load and embed chunks from a JSONL file."""
+        logger.info("Ingesting JSONL from %s", jsonl_path)
+        total = self.vector_store.ingest_jsonl(jsonl_path)
+        logger.info("JSONL ingestion complete. New chunks: %d | Total: %d", total, self.vector_store.count())
+        return total
+
     def ask(
         self,
         question: str,

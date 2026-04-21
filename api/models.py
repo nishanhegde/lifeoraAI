@@ -11,7 +11,7 @@ class AskRequest(BaseModel):
 
 
 class IngestRequest(BaseModel):
-    data_dir: Optional[str] = Field(None, description="Override data directory (defaults to config data.raw_dir)")
+    jsonl_path: Optional[str] = Field(None, description="Override JSONL path (defaults to data/processed/chunks_export.jsonl)")
 
 
 # ── Responses ─────────────────────────────────────────────────────────────────

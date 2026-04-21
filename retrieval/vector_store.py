@@ -146,5 +146,83 @@ class VectorStore:
 
         return total
 
+    def ingest_jsonl(self, jsonl_path: str) -> int:
+        """Embed and store chunks from a JSONL file exported by the health intel pipeline."""
+        import json
+        path = Path(jsonl_path)
+        if not path.exists():
+            raise IngestError(f"JSONL file not found: {jsonl_path}")
+
+        # Use the JSONL's own chunk_id (UUID) as the ChromaDB ID — guaranteed unique per record.
+        # Deduplicate by chunk_id in case the file itself has repeated entries.
+        seen_ids: set = set()
+        chunks = []
+        ids = []
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                record = json.loads(line)
+                if not record.get("embedding_ready", True):
+                    continue
+                chunk_id = record["chunk_id"]
+                if chunk_id in seen_ids:
+                    continue
+                seen_ids.add(chunk_id)
+                ids.append(chunk_id)
+                chunks.append({
+                    "text": record["text"],
+                    "metadata": {
+                        "source":          record.get("source_name", "unknown"),
+                        "source_url":      record.get("source_url", ""),
+                        "document_title":  record.get("document_title", ""),
+                        "domain":          record.get("domain", ""),
+                        "framework":       record.get("framework", ""),
+                        "region":          record.get("region", ""),
+                        "trust_level":     record.get("trust_level", ""),
+                        "safety_category": record.get("safety_category", ""),
+                        "audience":        record.get("audience", ""),
+                        "topic":           record.get("topic", ""),
+                    },
+                })
+
+        added = self._add_chunks_with_ids(chunks, ids)
+        logger.info("JSONL ingest: %d records read → %d new chunks added", len(chunks), added)
+        return added
+
+    def _add_chunks_with_ids(self, chunks: List[dict], ids: List[str]) -> int:
+        """Like add_chunks but uses caller-supplied IDs instead of computing content-hash IDs."""
+        if not chunks:
+            return 0
+        try:
+            collection = self._get_collection()
+            existing = collection.get(ids=ids, include=[])
+            existing_id_set = set(existing["ids"])
+
+            new_pairs = [
+                (cid, chunk)
+                for cid, chunk in zip(ids, chunks)
+                if cid not in existing_id_set
+            ]
+            if not new_pairs:
+                return 0
+
+            texts = [c["text"] for _, c in new_pairs]
+            embeddings = self.embedder.embed(texts)
+
+            for batch_start in range(0, len(new_pairs), _INSERT_BATCH_SIZE):
+                batch = new_pairs[batch_start: batch_start + _INSERT_BATCH_SIZE]
+                batch_embs = embeddings[batch_start: batch_start + _INSERT_BATCH_SIZE]
+                collection.add(
+                    ids=[cid for cid, _ in batch],
+                    embeddings=batch_embs,
+                    documents=[c["text"] for _, c in batch],
+                    metadatas=[c["metadata"] for _, c in batch],
+                )
+            return len(new_pairs)
+        except Exception as exc:
+            raise IngestError(f"Failed to add chunks to vector store: {exc}") from exc
+
     def count(self) -> int:
         return self._get_collection().count()

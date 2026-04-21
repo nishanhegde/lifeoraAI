@@ -45,11 +45,20 @@ def build_parser() -> argparse.ArgumentParser:
         default="config.yaml",
         help="Path to config.yaml (default: config.yaml)",
     )
+    parser.add_argument(
+        "--jsonl",
+        default=None,
+        metavar="FILE",
+        help="Ingest chunks from a JSONL file instead of data/raw/ (default: data/processed/chunks_export.jsonl)",
+    )
     return parser
 
 
-def run_ingest(pipeline: RAGPipeline) -> None:
-    added = pipeline.ingest()
+def run_ingest(pipeline: RAGPipeline, jsonl_path: str = None) -> None:
+    if jsonl_path:
+        added = pipeline.ingest_jsonl(jsonl_path)
+    else:
+        added = pipeline.ingest()
     print(f"Ingestion complete. {added} new chunks added.")
 
 
@@ -92,7 +101,7 @@ def cli() -> None:
         sys.exit(1)
 
     if args.command == "ingest":
-        run_ingest(pipeline)
+        run_ingest(pipeline, jsonl_path=args.jsonl)
     elif args.command == "ask":
         run_interactive(pipeline, show_sources=args.sources)
 
